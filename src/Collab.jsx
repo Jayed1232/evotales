@@ -231,23 +231,34 @@ function CharEditor({ sessionId, char, user, onBack }) {
         {sel('Affinity','affinity',[...AFFINITIES,...SPECIAL_AFFs])}
 
         <div className="form-group">
-          <label className="form-label">Bio</label>
-          <textarea className="form-input" rows={4} value={c.bio||''} onChange={e=>patch('bio',e.target.value)} style={{ resize:'vertical' }}/>
+          <label className="form-label">Backstory / Lore</label>
+          <textarea className="form-input" rows={4} value={c.lore||c.bio||''} onChange={e=>{ patch('lore',e.target.value); patch('bio',e.target.value) }} style={{ resize:'vertical' }}/>
         </div>
 
         {/* Skills */}
         <div style={{ fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:2,marginBottom:8 }}>SKILLS</div>
         {(c.skills||[]).map((sk,i)=>(
           <div key={i} style={{ background:'var(--panel)',border:'1px solid var(--border)',borderRadius:8,padding:'10px 12px',marginBottom:8 }}>
-            <div style={{ display:'flex',gap:8,marginBottom:6 }}>
+            <div style={{ display:'flex',gap:6,marginBottom:6 }}>
               <input value={sk.name||''} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],name:e.target.value}; patch('skills',s) }}
                 placeholder="Skill name" className="form-input" style={{ flex:1 }}/>
               <select value={sk.type||'Attack'} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],type:e.target.value}; patch('skills',s) }}
-                className="form-input" style={{ width:90 }}>
+                className="form-input" style={{ width:85 }}>
                 {['Attack','Buff','Debuff'].map(t=><option key={t}>{t}</option>)}
               </select>
             </div>
-            <input value={sk.desc||''} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],desc:e.target.value}; patch('skills',s) }}
+            <div style={{ display:'flex',gap:6,marginBottom:6 }}>
+              <select value={sk.element||'Fire'} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],element:e.target.value}; patch('skills',s) }}
+                className="form-input" style={{ flex:1 }}>
+                {['Fire','Water','Ice','Earth','Light','Dark','Blood','Void','Magma','Sand'].map(el=><option key={el}>{el}</option>)}
+              </select>
+              <div style={{ display:'flex',alignItems:'center',gap:5 }}>
+                <label style={{ fontSize:10,fontFamily:'Cinzel,serif',color:'var(--text3)',whiteSpace:'nowrap' }}>Lv.</label>
+                <input type="number" min="1" max="100" value={sk.level||1} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],level:parseInt(e.target.value)||1}; patch('skills',s) }}
+                  className="form-input" style={{ width:60 }}/>
+              </div>
+            </div>
+            <input value={sk.desc||sk.description||''} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],desc:e.target.value,description:e.target.value}; patch('skills',s) }}
               placeholder="Description" className="form-input"/>
             <button onClick={()=>{ const s=(c.skills||[]).filter((_,j)=>j!==i); patch('skills',s) }}
               style={{ marginTop:6,background:'rgba(193,18,31,0.1)',border:'1px solid rgba(193,18,31,0.3)',borderRadius:6,padding:'3px 10px',color:'#ff6b6b',fontSize:10,fontFamily:'Cinzel,serif',cursor:'pointer' }}>
@@ -256,7 +267,7 @@ function CharEditor({ sessionId, char, user, onBack }) {
           </div>
         ))}
         <MBtn className="btn btn-outline btn-full" style={{ marginBottom:16 }}
-          onClick={()=>patch('skills',[...(c.skills||[]),{name:'',type:'Attack',desc:'',element:'Fire',power:0}])}>
+          onClick={()=>patch('skills',[...(c.skills||[]),{name:'',type:'Attack',desc:'',description:'',element:'Fire',level:1,power:0}])}>
           + Add Skill
         </MBtn>
       </div>
@@ -614,7 +625,7 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
     const unsub=onValue(r,snap=>{
       const val=snap.val()
       if(!val){setSessions([]);return}
-      setSessions(objToArr(val).filter(s=>s.ownerId===user.id||(s.members&&s.members[user.id])))
+      setSessions(objToArr(val).filter(s=>s.title&&s.code&&(s.ownerId===user.id||(s.members&&s.members[user.id]))))
     })
     return ()=>unsub()
   },[user])
