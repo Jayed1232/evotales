@@ -755,18 +755,11 @@ function ReaderPage({ story, onClose }) {
   const [view, setView] = useState('home')
   const [chIdx, setChIdx] = useState(0)
   const [pIdx, setPIdx] = useState(0)
-  const storageKey = 'evo_progress_' + story.id
-const [unlockedChs, setUnlockedChs] = useState(() => {
-  try { return JSON.parse(localStorage.getItem(storageKey)) || [0] } catch { return [0] }
-})
+  const [unlockedChs, setUnlockedChs] = useState([0])
   const [viewChar, setViewChar] = useState(null)
   const chapters = story.chapters||[]
 
-  const completeChapter = (idx) => setUnlockedChs(prev => {
-  const next = [...new Set([...prev,idx+1])]
-  localStorage.setItem(storageKey, JSON.stringify(next))
-  return next
-})
+  const completeChapter = (idx) => setUnlockedChs(prev => [...new Set([...prev,idx+1])])
 
   const charsAt = (cIdx) => {
     const ch = chapters[cIdx]
@@ -1018,7 +1011,7 @@ export default function App() {
       <div className="tabs">
         {['library','online','collab'].map(t => <button key={t} className={'tab '+(tab===t?'active':'')} onClick={() => { if((t==='online'||t==='collab')&&!online) return; switchTab(t) }} style={(t==='online'||t==='collab')&&!online?{opacity:0.4,cursor:'not-allowed'}:{}}>{t==='library'?'📚 Library':t==='online'?'🌐 Online':'🤝 Collab'}</button>)}
       </div>
-      <div className="content">{tab==='library'?renderScreen():tab==='online'?<OnlineTab online={online} stories={stories} setModal={setModal}/>:<CollabTab stories={stories} online={online}/>}</div>
+      <div className="content">{tab==='library'?renderScreen():tab==='online'?<OnlineTab online={online} stories={stories} setModal={setModal}/>:<CollabTab stories={stories} online={online} onSaveToLibrary={(storyId,chapters,characters)=>{ patchStory(storyId,{chapters,characters}); showToast("Saved to Library ✦") }}/>}</div>
       {showFab&&<MagnetBtn className="fab" onClick={fabAction}>{screen==='home'?'✦':'+'}</MagnetBtn>}
       {modal==='newStory'&&<NewStoryModal onClose={()=>setModal(null)} onCreate={createStory}/>}
       {modal==='newChapter'&&story&&<NewChapterModal onClose={()=>setModal(null)} onCreate={t=>createChapter(t,story.id)}/>}
