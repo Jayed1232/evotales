@@ -135,8 +135,7 @@ function ChatPanel({ sessionId, user, members, onClose }) {
                 <div style={{ maxWidth:'75%',padding:'10px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',background:isMe?'rgba(201,168,76,0.15)':'var(--panel)',border:'1px solid '+(isMe?'rgba(201,168,76,0.3)':'var(--border)'),fontSize:13,color:'var(--text)',lineHeight:1.5 }}>
                   {m.text}
                 </div>
-                {/* Reply button */}
-                <button onClick={()=>setReplyTo(m)} style={{ background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,color:'var(--gold2)',cursor:'pointer',fontSize:11,padding:'3px 7px',fontFamily:'Cinzel,serif',flexShrink:0 }} title="Reply">↩ Reply</button>
+                <button onClick={()=>setReplyTo(m)} style={{ background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,color:'var(--gold2)',cursor:'pointer',fontSize:11,padding:'3px 7px',fontFamily:'Cinzel,serif',flexShrink:0 }} title="Reply">{'↩ Reply'}</button>
               </div>
               <div style={{ fontSize:8,color:'var(--text3)',marginTop:2 }}>{new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
             </div>
@@ -152,15 +151,19 @@ function ChatPanel({ sessionId, user, members, onClose }) {
             <span style={{ color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:9 }}>Replying to {replyTo.userName}: </span>
             {replyTo.text.substring(0,60)}
           </div>
-          <button onClick={()=>setReplyTo(null)} style={{ background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:14 }}>✕</button>
+          <button onClick={()=>setReplyTo(null)} style={{ background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:14 }}>{'✕'}</button>
         </div>
       )}
 
       {/* Input */}
       <div style={{ padding:'10px 14px',borderTop:'1px solid var(--border)',display:'flex',gap:8 }}>
-        <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
+        <input
+          value={text}
+          onChange={e=>setText(e.target.value)}
+          onKeyDown={e=>e.key==='Enter'&&send()}
           placeholder={replyTo?'Write your reply...':'Type a message...'}
           style={{ flex:1,background:'var(--panel)',border:'1px solid rgba(201,168,76,0.5)',borderRadius:20,padding:'10px 14px',color:'var(--text)',fontFamily:'Crimson Pro,serif',fontSize:13,outline:'none',boxShadow:'0 0 8px rgba(201,168,76,0.2)' }}
+        />
         <button onClick={send} style={{ background:'rgba(201,168,76,0.2)',border:'1px solid rgba(201,168,76,0.4)',borderRadius:'50%',width:38,height:38,color:'var(--gold2)',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{'➤'}</button>
       </div>
     </Overlay>
@@ -223,17 +226,13 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
   const [saving,setSaving]=useState(false)
   const [showSkill,setShowSkill]=useState(false)
   const [editSkill,setEditSkill]=useState(null)
-  const [activeTab,setActiveTab]=useState('base') // 'base' or chapter id
+  const [activeTab,setActiveTab]=useState('base')
   const [chapterStats,setChapterStats]=useState(char.chapterStats||{})
   const stats=calcStats(c.level||1)
 
   const patch=(field,val)=>setC(prev=>({...prev,[field]:val}))
-  const togAff=(a)=>{
-    const cur=c.affinities||[]
-    patch('affinities', cur.includes(a)?cur.filter(x=>x!==a):[...cur,a])
-  }
+  const togAff=(a)=>{ const cur=c.affinities||[]; patch('affinities',cur.includes(a)?cur.filter(x=>x!==a):[...cur,a]) }
 
-  // Chapter stats helpers
   const getChStat=(chId)=>chapterStats[chId]||{}
   const patchChStat=(chId,field,val)=>setChapterStats(prev=>({...prev,[chId]:{...prev[chId],[field]:val}}))
   const chSkills=(chId)=>getChStat(chId).skills||c.skills||[]
@@ -248,8 +247,8 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
   }
 
   const sel=(label,field,opts,chId)=>{
-    const val=chId ? (getChStat(chId)[field]||c[field]||opts[0]) : (c[field]||opts[0])
-    const onChange=chId ? (v=>patchChStat(chId,field,v)) : (v=>patch(field,v))
+    const val=chId?(getChStat(chId)[field]||c[field]||opts[0]):(c[field]||opts[0])
+    const onChange=chId?(v=>patchChStat(chId,field,v)):(v=>patch(field,v))
     return (
       <div className="form-group" key={field}>
         <label className="form-label">{label}</label>
@@ -271,29 +270,27 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
         right={<div style={{display:'flex',gap:6,alignItems:'center'}}>{saving&&<span style={{fontSize:9,color:'var(--text3)',fontFamily:'Cinzel,serif'}}>saving...</span>}<IBtn onClick={save}>Save ✦</IBtn></div>}
       />
 
-      {/* Tab bar: Base + per chapter */}
+      {/* Tab bar */}
       <div style={{display:'flex',overflowX:'auto',borderBottom:'1px solid var(--border)',background:'rgba(13,10,26,0.8)',flexShrink:0}}>
         <button onClick={()=>setActiveTab('base')} style={{padding:'8px 14px',background:'none',border:'none',borderBottom:activeTab==='base'?'2px solid var(--gold)':'2px solid transparent',color:activeTab==='base'?'var(--gold2)':'var(--text3)',fontFamily:'Cinzel,serif',fontSize:10,cursor:'pointer',whiteSpace:'nowrap',letterSpacing:1}}>
           BASE
         </button>
         {(chapters||[]).map(ch=>(
           <button key={ch.id} onClick={()=>setActiveTab(ch.id)} style={{padding:'8px 12px',background:'none',border:'none',borderBottom:activeTab===ch.id?'2px solid var(--gold)':'2px solid transparent',color:activeTab===ch.id?'var(--gold2)':'var(--text3)',fontFamily:'Cinzel,serif',fontSize:9,cursor:'pointer',whiteSpace:'nowrap',letterSpacing:0.5}}>
-            {ch.title.length>16?ch.title.substring(0,16)+'…':ch.title}
+            {ch.title.length>16?ch.title.substring(0,16)+'...':ch.title}
           </button>
         ))}
       </div>
 
       <div style={{flex:1,overflowY:'auto',padding:'12px 14px'}}>
 
-        {/* Chapter tab header */}
         {isChTab&&(
           <div style={{marginBottom:10,padding:'8px 12px',background:'rgba(201,168,76,0.05)',border:'1px solid rgba(201,168,76,0.15)',borderRadius:8,fontSize:11,color:'var(--text2)',fontFamily:'Cinzel,serif'}}>
-            ✦ Editing stats for: <span style={{color:'var(--gold2)'}}>{chapters.find(ch=>ch.id===chId)?.title}</span>
+            {'✦ Editing stats for: '}<span style={{color:'var(--gold2)'}}>{chapters.find(ch=>ch.id===chId)?.title}</span>
             <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>Leave blank to inherit base stats</div>
           </div>
         )}
 
-        {/* Stats display */}
         {!isChTab&&(
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12}}>
             {[['HP',stats.hp],['Mana',stats.mana],['Speed',stats.speed]].map(([k,v])=>(
@@ -305,18 +302,16 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
           </div>
         )}
 
-        {/* Level */}
         <div className="form-group">
-          <label className="form-label">Level (1–100)</label>
+          <label className="form-label">Level (1-100)</label>
           <input className="form-input" type="number" min="1" max="100"
             value={isChTab?(getChStat(chId).level||c.level||1):(c.level||1)}
             onChange={e=>isChTab?patchChStat(chId,'level',parseInt(e.target.value)||1):patch('level',parseInt(e.target.value)||1)}/>
           <div style={{fontSize:10,fontFamily:'Cinzel,serif',color:'var(--gold)',marginTop:4}}>
-            ⚔ {getTierName(isChTab?(getChStat(chId).level||c.level||1):(c.level||1))}
+            {'⚔ '}{getTierName(isChTab?(getChStat(chId).level||c.level||1):(c.level||1))}
           </div>
         </div>
 
-        {/* Base-only fields */}
         {!isChTab&&(
           <>
             <div className="form-group">
@@ -334,7 +329,6 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
         {sel('Grade / Rank','grade',GRADES,chId)}
         {!isChTab&&sel('Affinity (Primary)','affinity',[...AFFINITIES,...SPECIAL_AFFs],null)}
 
-        {/* Multi affinities — base only */}
         {!isChTab&&(
           <div className="form-group">
             <label className="form-label">Affinities</label>
@@ -346,7 +340,6 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
           </div>
         )}
 
-        {/* Backstory — base only */}
         {!isChTab&&(
           <div className="form-group">
             <label className="form-label">Backstory / Lore</label>
@@ -354,7 +347,6 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
           </div>
         )}
 
-        {/* Skills */}
         <div style={{fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:2,marginBottom:8}}>SKILLS</div>
         {(isChTab?chSkills(chId):c.skills||[]).map(sk=>(
           <div key={sk.id||sk.name} className="skill-item" style={{'--element-clr':AFF_CLR[sk.element]||'var(--gold)'}}>
@@ -367,11 +359,11 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
               </div>
               {(sk.description||sk.desc)&&<div style={{fontSize:11,color:'var(--text3)',marginTop:3,fontStyle:'italic'}}>{sk.description||sk.desc}</div>}
             </div>
-            <button onClick={()=>setEditSkill({...sk,_chId:isChTab?chId:null})} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:13,padding:'0 4px'}}>✏</button>
+            <button onClick={()=>setEditSkill({...sk,_chId:isChTab?chId:null})} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:13,padding:'0 4px'}}>{'✏'}</button>
             <button onClick={()=>{
               if(isChTab) setChSkills(chId,chSkills(chId).filter(x=>x.id!==sk.id&&x.name!==sk.name))
               else patch('skills',(c.skills||[]).filter(x=>x.id!==sk.id&&x.name!==sk.name))
-            }} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:18,padding:'0 4px'}}>×</button>
+            }} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:18,padding:'0 4px'}}>{'×'}</button>
           </div>
         ))}
         <MBtn className="btn btn-outline btn-full" style={{marginTop:6,marginBottom:20}} onClick={()=>setShowSkill(true)}>+ Add Skill</MBtn>
@@ -390,7 +382,7 @@ function CharEditor({ sessionId, char, chapters, user, onBack }) {
   )
 }
 
-// ── CHARACTERS TAB IN SESSION ─────────────────────────────────────────────────
+// ── CHARACTERS PANEL ──────────────────────────────────────────────────────────
 function CharactersPanel({ sessionId, user, onBack, initChars, chapters }) {
   const [chars,setChars]=useState({})
   const [activeChar,setActiveChar]=useState(null)
@@ -408,7 +400,7 @@ function CharactersPanel({ sessionId, user, onBack, initChars, chapters }) {
 
   return (
     <Overlay zIndex={240}>
-      <HeaderBar left={<BackBtn onClick={onBack}/>} center={<div style={{ fontFamily:'Cinzel,serif',fontSize:13,color:'var(--gold2)',letterSpacing:1 }}>⚔ CHARACTERS</div>}/>
+      <HeaderBar left={<BackBtn onClick={onBack}/>} center={<div style={{ fontFamily:'Cinzel,serif',fontSize:13,color:'var(--gold2)',letterSpacing:1 }}>{'⚔ CHARACTERS'}</div>}/>
       <div style={{ flex:1,overflowY:'auto',padding:'12px 16px' }}>
         {charList.length===0&&<div style={{ textAlign:'center',color:'var(--text3)',fontSize:13,padding:'40px 0' }}>No characters in this story yet.</div>}
         {charList.map(c=>{
@@ -430,7 +422,7 @@ function CharactersPanel({ sessionId, user, onBack, initChars, chapters }) {
                 <div style={{ textAlign:'right',fontSize:10,color:'var(--text3)',fontFamily:'Cinzel,serif' }}>
                   <div>HP {stats.hp}</div>
                   <div>MP {stats.mana}</div>
-                  {c.lastEditBy&&<div style={{ marginTop:4,fontSize:8 }}>✎ {c.lastEditBy}</div>}
+                  {c.lastEditBy&&<div style={{ marginTop:4,fontSize:8 }}>{'✎ '}{c.lastEditBy}</div>}
                 </div>
               </div>
             </div>
@@ -462,7 +454,7 @@ function PartWriter({ sessionId, chapterId, part, user, canEdit, onBack, members
         right={
           <>
             {saving&&<span style={{ fontSize:9,color:'var(--text3)',fontFamily:'Cinzel,serif' }}>saving...</span>}
-            <IBtn onClick={onOpenChat}>💬</IBtn>
+            <IBtn onClick={onOpenChat}>{'💬'}</IBtn>
           </>
         }
       />
@@ -509,9 +501,9 @@ function ChapterView({ sessionId, chapter, user, isOwner, onBack, members, onOpe
       <HeaderBar
         left={<BackBtn onClick={onBack}/>}
         center={<div style={{ fontFamily:'Cinzel,serif',fontSize:13,color:'var(--gold2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{chapter.title}</div>}
-        right={<IBtn onClick={onOpenChat}>💬</IBtn>}
+        right={<IBtn onClick={onOpenChat}>{'💬'}</IBtn>}
       />
-      {!canEdit&&<div style={{ margin:'10px 14px',padding:'8px 12px',background:'rgba(193,18,31,0.1)',border:'1px solid rgba(193,18,31,0.3)',borderRadius:8,fontSize:11,color:'#ff6b6b',fontFamily:'Cinzel,serif' }}>⚠ Not assigned to you — read only.</div>}
+      {!canEdit&&<div style={{ margin:'10px 14px',padding:'8px 12px',background:'rgba(193,18,31,0.1)',border:'1px solid rgba(193,18,31,0.3)',borderRadius:8,fontSize:11,color:'#ff6b6b',fontFamily:'Cinzel,serif' }}>{'⚠ Not assigned to you — read only.'}</div>}
       <div style={{ flex:1,overflowY:'auto',padding:'8px 14px 20px' }}>
         {parts.length===0&&<div style={{ textAlign:'center',color:'var(--text3)',fontSize:13,padding:'30px 0' }}>No parts yet.{(isOwner||canEdit)?' Add one below!':''}</div>}
         {parts.map(p=>(
@@ -523,14 +515,14 @@ function ChapterView({ sessionId, chapter, user, isOwner, onBack, members, onOpe
               <div style={{ fontFamily:'Cinzel,serif',fontSize:12,color:'var(--gold2)' }}>{p.title}</div>
               <div style={{ fontSize:10,color:'var(--text3)',marginTop:2 }}>{p.content?.split(/\s+/).filter(Boolean).length||0} words{p.lastEditBy&&' · '+p.lastEditBy}</div>
             </div>
-            <div style={{ color:'var(--gold2)',fontSize:16 }}>▶</div>
+            <div style={{ color:'var(--gold2)',fontSize:16 }}>{'▶'}</div>
           </div>
         ))}
         {(isOwner||canEdit)&&(showAddPart?(
           <div style={{ display:'flex',gap:8,marginTop:8 }}>
             <input value={newPartTitle} onChange={e=>setNewPartTitle(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addPart()} placeholder="Part title..." className="form-input" style={{ flex:1 }} autoFocus/>
             <MBtn className="btn btn-gold btn-sm" onClick={addPart}>Add</MBtn>
-            <MBtn className="btn btn-outline btn-sm" onClick={()=>setShowAddPart(false)}>✕</MBtn>
+            <MBtn className="btn btn-outline btn-sm" onClick={()=>setShowAddPart(false)}>{'✕'}</MBtn>
           </div>
         ):(
           <MBtn className="btn btn-outline btn-full" style={{ marginTop:10 }} onClick={()=>setShowAddPart(true)}>+ Add Part</MBtn>
@@ -592,16 +584,12 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
 
   const handleSaveToLibrary=async()=>{
     setSaving(true)
-    // Build chapters array from Firebase data
     const builtChapters=chapters.map(ch=>{
       const chParts=objToArr(ch.parts||{})
-      return {
-        id:ch.id, title:ch.title, completed:ch.completed||false, content:'',
-        parts:chParts.map(p=>({id:p.id,title:p.title,content:p.content||''}))
-      }
+      return { id:ch.id,title:ch.title,completed:ch.completed||false,content:'',parts:chParts.map(p=>({id:p.id,title:p.title,content:p.content||''})) }
     })
     const builtChars=objToArr(chars)
-    await onSaveToLibrary(session.storyId, builtChapters, builtChars)
+    await onSaveToLibrary(session.storyId,builtChapters,builtChars)
     setSaving(false)
   }
 
@@ -630,7 +618,6 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
         }
       />
 
-      {/* Action toolbar */}
       <div style={{ display:'flex',gap:0,borderBottom:'1px solid var(--border)',background:'rgba(13,10,26,0.8)',flexShrink:0 }}>
         <ToolBtn icon="💬" label="Chat" onClick={()=>setShowChat(true)}/>
         <ToolBtn icon="⚔" label="Characters" onClick={()=>setShowChars(true)}/>
@@ -639,35 +626,31 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
       </div>
 
       <div style={{ flex:1,overflowY:'auto',padding:'8px 14px 20px' }}>
-        {/* Members row with kick */}
         <div style={{ display:'flex',flexWrap:'wrap',gap:6,marginTop:8,marginBottom:10 }}>
           {Object.values(members).map(m=>(
             <div key={m.id} style={{ display:'flex',alignItems:'center',gap:5,padding:'3px 8px',borderRadius:20,border:'1px solid '+(m.online?'rgba(76,175,80,0.3)':'var(--border)'),background:m.online?'rgba(76,175,80,0.06)':'var(--bg2)',fontSize:10,fontFamily:'Cinzel,serif',color:m.online?'#4caf50':'var(--text3)' }}>
               <div style={{ width:6,height:6,borderRadius:'50%',background:m.online?'#4caf50':'var(--text3)' }}/>
               {m.name}{m.id===session.ownerId?' 👑':''}
               {isOwner&&m.id!==user.id&&(
-                <button onClick={()=>kickMember(m.id)} title="Kick member" style={{ background:'none',border:'none',color:'rgba(255,107,107,0.6)',cursor:'pointer',fontSize:10,padding:'0 2px',marginLeft:2 }}>✕</button>
+                <button onClick={()=>kickMember(m.id)} title="Kick member" style={{ background:'none',border:'none',color:'rgba(255,107,107,0.6)',cursor:'pointer',fontSize:10,padding:'0 2px',marginLeft:2 }}>{'✕'}</button>
               )}
             </div>
           ))}
         </div>
 
-        {/* Activity */}
         {notifications.length>0&&(
           <div style={{ marginBottom:10,padding:'8px 12px',background:'rgba(201,168,76,0.05)',border:'1px solid rgba(201,168,76,0.15)',borderRadius:10 }}>
             <div style={{ fontSize:8,fontFamily:'Cinzel,serif',color:'var(--gold)',letterSpacing:2,marginBottom:5 }}>RECENT ACTIVITY</div>
-            {notifications.map(n=><div key={n.id} style={{ fontSize:11,color:'var(--text2)',marginBottom:2 }}>✦ {n.text}</div>)}
+            {notifications.map(n=><div key={n.id} style={{ fontSize:11,color:'var(--text2)',marginBottom:2 }}>{'✦ '}{n.text}</div>)}
           </div>
         )}
 
-        {/* Owner save tip */}
         {isOwner&&(
           <div style={{ marginBottom:10,padding:'8px 12px',background:'rgba(76,175,80,0.05)',border:'1px solid rgba(76,175,80,0.15)',borderRadius:8,fontSize:11,color:'rgba(76,175,80,0.8)',fontFamily:'Cinzel,serif' }}>
-            💾 Tap the save button in the header to sync all collab changes back to your Library story.
+            {'💾 Tap the save button in the toolbar to sync all collab changes back to your Library story.'}
           </div>
         )}
 
-        {/* Chapters */}
         <div style={{ fontSize:8,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:2,marginBottom:8 }}>CHAPTERS</div>
         {chapters.length===0&&<div style={{ textAlign:'center',color:'var(--text3)',fontSize:13,padding:'20px 0' }}>No chapters yet.{isOwner?' Add one below!':''}</div>}
 
@@ -681,13 +664,13 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
                 <div style={{ flex:1,cursor:'pointer' }} onClick={()=>setActiveChapter(ch)}>
                   <div style={{ fontFamily:'Cinzel,serif',fontSize:12,color:'var(--gold2)' }}>{ch.title}</div>
                   <div style={{ fontSize:10,color:'var(--text3)',marginTop:2 }}>
-                    {partCount} parts · {assignedMember?'→ '+assignedMember.name:'Open to all'}
+                    {partCount} parts · {assignedMember?'-> '+assignedMember.name:'Open to all'}
                     {!canEdit&&' · Read only'}
                   </div>
                 </div>
                 <div style={{ display:'flex',gap:5,alignItems:'center',flexShrink:0 }}>
                   {isOwner&&<button onClick={()=>setShowAssign(showAssign===ch.id?null:ch.id)} style={{ fontSize:9,fontFamily:'Cinzel,serif',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,padding:'3px 8px',color:'var(--gold)',cursor:'pointer' }}>Assign</button>}
-                  <div onClick={()=>setActiveChapter(ch)} style={{ fontSize:18,color:canEdit?'var(--gold2)':'var(--text3)',cursor:'pointer' }}>▶</div>
+                  <div onClick={()=>setActiveChapter(ch)} style={{ fontSize:18,color:canEdit?'var(--gold2)':'var(--text3)',cursor:'pointer' }}>{'▶'}</div>
                 </div>
               </div>
 
@@ -712,7 +695,7 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
           <div style={{ display:'flex',gap:8,marginBottom:14 }}>
             <input value={newChTitle} onChange={e=>setNewChTitle(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addChapter()} placeholder="Chapter title..." className="form-input" style={{ flex:1 }} autoFocus/>
             <MBtn className="btn btn-gold btn-sm" onClick={addChapter}>Add</MBtn>
-            <MBtn className="btn btn-outline btn-sm" onClick={()=>setShowAddCh(false)}>✕</MBtn>
+            <MBtn className="btn btn-outline btn-sm" onClick={()=>setShowAddCh(false)}>{'✕'}</MBtn>
           </div>
         ):(
           <MBtn className="btn btn-outline btn-full" style={{ marginBottom:14 }} onClick={()=>setShowAddCh(true)}>+ Add Chapter</MBtn>
@@ -764,20 +747,15 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
     setLoading(true)
     const sId=uid(), code=genCode()
     const chapters={}
-
-    // Import existing characters into Firebase
     const characters={}
     ;(story.characters||[]).forEach(c=>{ characters[c.id]={...c} })
-
     ;(story.chapters||[]).forEach((ch,idx)=>{
       const parts={}
       ;(ch.parts||[]).forEach((p,pi)=>{ const pid=p.id||uid(); parts[pid]={id:pid,title:p.title,content:p.content||'',order:pi} })
-      // Auto-convert plain chapter content to a part
       if(Object.keys(parts).length===0&&ch.content){ const pid=uid(); parts[pid]={id:pid,title:'Content',content:ch.content,order:0} }
       const cid=ch.id||uid()
       chapters[cid]={id:cid,title:ch.title,parts,order:idx,assignedTo:'all'}
     })
-
     const sessionData={id:sId,title:story.title,genre:story.genre,code,ownerId:user.id,ownerName:user.name,storyId:story.id,createdAt:Date.now(),members:{[user.id]:{id:user.id,name:user.name,online:true,role:'owner'}},chapters,characters}
     await set(ref(rtdb,'collab_sessions/'+sId),sessionData)
     setLoading(false); setShowCreate(false); setSelectedStory('')
@@ -804,7 +782,6 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
 
   return (
     <div className="screen-fade" style={{ paddingBottom:80 }}>
-      {/* Profile card */}
       <div style={{ margin:'14px 16px',padding:'12px 14px',background:'var(--panel)',border:'1px solid var(--border)',borderRadius:12,display:'flex',alignItems:'center',gap:10 }}>
         <div style={{ width:42,height:42,borderRadius:'50%',background:'radial-gradient(circle,#9b3dab,#2d1550)',border:'2px solid var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,fontFamily:'Cinzel,serif',color:'var(--gold2)',flexShrink:0 }}>{user.name[0].toUpperCase()}</div>
         <div style={{ flex:1 }}>
@@ -814,21 +791,19 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
         <button onClick={()=>{ if(window.confirm('Reset your writer name?')){localStorage.removeItem('evo_user_profile');setUser(null)} }} style={{ fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',background:'none',border:'1px solid var(--border)',borderRadius:8,padding:'4px 8px',cursor:'pointer' }}>Edit</button>
       </div>
 
-      {/* Action cards */}
       <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,padding:'0 16px 14px' }}>
         <div onClick={()=>setShowCreate(true)} style={{ background:'var(--panel)',border:'1px solid var(--border)',borderRadius:12,padding:'16px',cursor:'pointer',transition:'all .2s',textAlign:'center' }} onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(201,168,76,0.4)'} onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
-          <div style={{ fontSize:24,marginBottom:5 }}>⚔</div>
+          <div style={{ fontSize:24,marginBottom:5 }}>{'⚔'}</div>
           <div style={{ fontFamily:'Cinzel,serif',fontSize:10,color:'var(--gold2)',letterSpacing:1 }}>Start Session</div>
           <div style={{ fontSize:9,color:'var(--text3)',marginTop:2 }}>From published stories</div>
         </div>
         <div onClick={()=>setShowJoin(true)} style={{ background:'var(--panel)',border:'1px solid var(--border)',borderRadius:12,padding:'16px',cursor:'pointer',transition:'all .2s',textAlign:'center' }} onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(0,212,255,0.4)'} onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
-          <div style={{ fontSize:24,marginBottom:5 }}>🔗</div>
+          <div style={{ fontSize:24,marginBottom:5 }}>{'🔗'}</div>
           <div style={{ fontFamily:'Cinzel,serif',fontSize:10,color:'var(--cyan)',letterSpacing:1 }}>Join Session</div>
           <div style={{ fontSize:9,color:'var(--text3)',marginTop:2 }}>Enter invite code</div>
         </div>
       </div>
 
-      {/* Sessions list */}
       {sessions.length>0&&(
         <>
           <div style={{ padding:'0 16px',fontSize:8,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:2,marginBottom:7 }}>YOUR SESSIONS</div>
@@ -840,7 +815,7 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
                   <div style={{ fontFamily:'Cinzel,serif',fontSize:12,color:'var(--gold2)' }}>{s.title}</div>
                   <div style={{ fontSize:9,color:'var(--text3)',marginTop:2,fontFamily:'Cinzel,serif' }}>{s.ownerId===user.id?'Owner':'Collaborator'} · {Object.keys(s.members||{}).length} members · {s.code}</div>
                 </div>
-                <div style={{ fontSize:18,color:'var(--gold2)' }}>▶</div>
+                <div style={{ fontSize:18,color:'var(--gold2)' }}>{'▶'}</div>
               </div>
             </div>
           ))}
@@ -848,15 +823,14 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
       )}
 
       {sessions.length===0&&!showCreate&&!showJoin&&(
-        <div className="empty-state"><div className="empty-icon">🤝</div><div className="empty-title">No Sessions Yet</div><div className="empty-desc">Start a collab from your published story or join with a code.</div></div>
+        <div className="empty-state"><div className="empty-icon">{'🤝'}</div><div className="empty-title">No Sessions Yet</div><div className="empty-desc">Start a collab from your published story or join with a code.</div></div>
       )}
 
-      {/* Create modal */}
       {showCreate&&(
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowCreate(false)}>
           <div className="modal">
             <div className="modal-drag"/>
-            <div className="modal-title">⚔ Start Collab Session</div>
+            <div className="modal-title">{'⚔ Start Collab Session'}</div>
             <p style={{ fontSize:13,color:'var(--text2)',marginBottom:12,lineHeight:1.6 }}>Select a published story. Chapters and characters will be imported.</p>
             {publishedStories.length===0?(
               <div style={{ textAlign:'center',color:'var(--text3)',fontSize:13,padding:'16px 0' }}>No published stories yet. Publish one from Library first.</div>
@@ -873,7 +847,7 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
                 </div>
                 <div style={{ display:'flex',gap:8 }}>
                   <MBtn className="btn btn-outline" onClick={()=>setShowCreate(false)}>Cancel</MBtn>
-                  <MBtn className="btn btn-gold" style={{ flex:1 }} disabled={!selectedStory||loading} onClick={createSession}>{loading?'⟳ Creating...':'Create Session ✦'}</MBtn>
+                  <MBtn className="btn btn-gold" style={{ flex:1 }} disabled={!selectedStory||loading} onClick={createSession}>{loading?'Creating...':'Create Session'}</MBtn>
                 </div>
               </>
             )}
@@ -881,12 +855,11 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
         </div>
       )}
 
-      {/* Join modal */}
       {showJoin&&(
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowJoin(false)}>
           <div className="modal">
             <div className="modal-drag"/>
-            <div className="modal-title">🔗 Join Collab Session</div>
+            <div className="modal-title">{'🔗 Join Collab Session'}</div>
             <p style={{ fontSize:13,color:'var(--text2)',marginBottom:12 }}>Enter the invite code shared by the story owner.</p>
             <div className="form-group">
               <label className="form-label">Invite Code</label>
@@ -895,7 +868,7 @@ export default function CollabTab({ stories, online, onSaveToLibrary }) {
             </div>
             <div style={{ display:'flex',gap:8 }}>
               <MBtn className="btn btn-outline" onClick={()=>{ setShowJoin(false); setJoinCode(''); setJoinError('') }}>Cancel</MBtn>
-              <MBtn className="btn btn-gold" style={{ flex:1 }} disabled={!joinCode.trim()||loading} onClick={joinSession}>{loading?'⟳ Joining...':'Join Session ✦'}</MBtn>
+              <MBtn className="btn btn-gold" style={{ flex:1 }} disabled={!joinCode.trim()||loading} onClick={joinSession}>{loading?'Joining...':'Join Session'}</MBtn>
             </div>
           </div>
         </div>
