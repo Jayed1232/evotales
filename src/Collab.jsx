@@ -167,116 +167,231 @@ function ChatPanel({ sessionId, user, members, onClose }) {
   )
 }
 
+// ── SKILL MODAL (collab) ─────────────────────────────────────────────────────
+const SKILL_TYPE_CLR = { Attack:'#ff4d4d', Buff:'#4caf50', Debuff:'#9b5de5' }
+const SKILL_TYPE_FIELDS = {
+  Attack:[['dmg','DMG'],['hpHeal','HP Heal'],['mpHeal','MP Regen']],
+  Buff:[['hpHeal','HP Heal'],['mpHeal','MP Regen'],['speedUp','Speed Up'],['atkBuff','ATK Buff'],['defBuff','DEF Buff']],
+  Debuff:[['atkDebuff','ATK Debuff'],['defDebuff','DEF Debuff'],['dmg','DMG']],
+}
+
+function CollabSkillModal({ existing, onClose, onSave }) {
+  const blank={name:'',type:'Attack',element:'Fire',level:1,description:'',dmg:0,hpHeal:0,mpHeal:0,speedUp:0,atkBuff:0,defBuff:0,atkDebuff:0,defDebuff:0}
+  const [f,sf]=useState(existing||blank)
+  const set=(k,v)=>sf(p=>({...p,[k]:v}))
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-drag"/>
+        <div className="modal-title">{existing?'✏ Edit Skill':'⚡ Add Skill'}</div>
+        <div className="form-group"><label className="form-label">Skill Name</label><input className="form-input" placeholder="e.g. Flame Strike..." value={f.name} onChange={e=>set('name',e.target.value)} autoFocus/></div>
+        <div className="form-group">
+          <label className="form-label">Type</label>
+          <div className="radio-group">
+            {['Attack','Buff','Debuff'].map(t=><div key={t} className={'radio-btn '+(f.type===t?'active':'')} style={f.type===t?{borderColor:SKILL_TYPE_CLR[t],color:SKILL_TYPE_CLR[t]}:{}} onClick={()=>set('type',t)}>{t}</div>)}
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Element</label>
+          <div className="multi-select">{ALL_ELEMENTS.map(el=><div key={el} className={'multi-chip '+(f.element===el?'sel':'')} style={{color:AFF_CLR[el]}} onClick={()=>set('element',el)}>{el}</div>)}</div>
+        </div>
+        <div className="form-group"><label className="form-label">Skill Level</label><input type="number" className="form-number" value={f.level} min={1} onChange={e=>set('level',Math.max(1,+e.target.value))}/></div>
+        <div className="form-group"><label className="form-label">Description</label><textarea className="form-textarea" style={{minHeight:60}} placeholder="Describe what this skill does..." value={f.description||f.desc||''} onChange={e=>set('description',e.target.value)}/></div>
+        <div className="form-group">
+          <label className="form-label">Skill Stats</label>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            {(SKILL_TYPE_FIELDS[f.type]||[]).map(([key,label])=>(
+              <div key={key}>
+                <div style={{fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:1,marginBottom:4}}>{label}</div>
+                <input type="number" className="form-number" value={f[key]||0} min={0} onChange={e=>set(key,+e.target.value)}/>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <MBtn className="btn btn-outline" onClick={onClose}>Cancel</MBtn>
+          <MBtn className="btn btn-gold" style={{flex:1}} onClick={()=>{ if(!f.name.trim())return; onSave({...f,id:f.id||uid()}); onClose() }}>{existing?'Save Changes':'Add Skill'}</MBtn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── CHARACTER EDITOR ─────────────────────────────────────────────────────────
-function CharEditor({ sessionId, char, user, onBack }) {
+function CharEditor({ sessionId, char, chapters, user, onBack }) {
   const [c,setC]=useState(char)
   const [saving,setSaving]=useState(false)
+  const [showSkill,setShowSkill]=useState(false)
+  const [editSkill,setEditSkill]=useState(null)
+  const [activeTab,setActiveTab]=useState('base') // 'base' or chapter id
+  const [chapterStats,setChapterStats]=useState(char.chapterStats||{})
   const stats=calcStats(c.level||1)
 
   const patch=(field,val)=>setC(prev=>({...prev,[field]:val}))
+  const togAff=(a)=>{
+    const cur=c.affinities||[]
+    patch('affinities', cur.includes(a)?cur.filter(x=>x!==a):[...cur,a])
+  }
+
+  // Chapter stats helpers
+  const getChStat=(chId)=>chapterStats[chId]||{}
+  const patchChStat=(chId,field,val)=>setChapterStats(prev=>({...prev,[chId]:{...prev[chId],[field]:val}}))
+  const chSkills=(chId)=>getChStat(chId).skills||c.skills||[]
+  const setChSkills=(chId,skills)=>patchChStat(chId,'skills',skills)
 
   const save=async()=>{
     if(!rtdb)return
     setSaving(true)
-    await update(ref(rtdb,'collab_sessions/'+sessionId+'/characters/'+c.id),{...c,lastEditBy:user.name,lastEditAt:Date.now()})
+    await update(ref(rtdb,'collab_sessions/'+sessionId+'/characters/'+c.id),{...c,chapterStats,lastEditBy:user.name,lastEditAt:Date.now()})
     setSaving(false)
     onBack()
   }
 
-  const sel=(label,field,opts)=>(
-    <div className="form-group" key={field}>
-      <label className="form-label">{label}</label>
-      <select className="form-input" value={c[field]||''} onChange={e=>patch(field,e.target.value)}>
-        {opts.map(o=><option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  )
+  const sel=(label,field,opts,chId)=>{
+    const val=chId ? (getChStat(chId)[field]||c[field]||opts[0]) : (c[field]||opts[0])
+    const onChange=chId ? (v=>patchChStat(chId,field,v)) : (v=>patch(field,v))
+    return (
+      <div className="form-group" key={field}>
+        <label className="form-label">{label}</label>
+        <select className="form-input" value={val} onChange={e=>onChange(e.target.value)}>
+          {opts.map(o=><option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+    )
+  }
+
+  const isChTab=activeTab!=='base'
+  const chId=isChTab?activeTab:null
 
   return (
     <Overlay zIndex={280}>
       <HeaderBar
         left={<BackBtn onClick={onBack}/>}
-        center={<div style={{ fontFamily:'Cinzel,serif',fontSize:13,color:'var(--gold2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{c.name}</div>}
-        right={
-          <div style={{ display:'flex',gap:6,alignItems:'center' }}>
-            {saving&&<span style={{ fontSize:9,color:'var(--text3)',fontFamily:'Cinzel,serif' }}>saving...</span>}
-            <IBtn onClick={save}>Save ✦</IBtn>
-          </div>
-        }
+        center={<div style={{fontFamily:'Cinzel,serif',fontSize:13,color:'var(--gold2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.name}</div>}
+        right={<div style={{display:'flex',gap:6,alignItems:'center'}}>{saving&&<span style={{fontSize:9,color:'var(--text3)',fontFamily:'Cinzel,serif'}}>saving...</span>}<IBtn onClick={save}>Save ✦</IBtn></div>}
       />
-      <div style={{ flex:1,overflowY:'auto',padding:'14px 16px' }}>
+
+      {/* Tab bar: Base + per chapter */}
+      <div style={{display:'flex',overflowX:'auto',borderBottom:'1px solid var(--border)',background:'rgba(13,10,26,0.8)',flexShrink:0}}>
+        <button onClick={()=>setActiveTab('base')} style={{padding:'8px 14px',background:'none',border:'none',borderBottom:activeTab==='base'?'2px solid var(--gold)':'2px solid transparent',color:activeTab==='base'?'var(--gold2)':'var(--text3)',fontFamily:'Cinzel,serif',fontSize:10,cursor:'pointer',whiteSpace:'nowrap',letterSpacing:1}}>
+          BASE
+        </button>
+        {(chapters||[]).map(ch=>(
+          <button key={ch.id} onClick={()=>setActiveTab(ch.id)} style={{padding:'8px 12px',background:'none',border:'none',borderBottom:activeTab===ch.id?'2px solid var(--gold)':'2px solid transparent',color:activeTab===ch.id?'var(--gold2)':'var(--text3)',fontFamily:'Cinzel,serif',fontSize:9,cursor:'pointer',whiteSpace:'nowrap',letterSpacing:0.5}}>
+            {ch.title.length>16?ch.title.substring(0,16)+'…':ch.title}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',padding:'12px 14px'}}>
+
+        {/* Chapter tab header */}
+        {isChTab&&(
+          <div style={{marginBottom:10,padding:'8px 12px',background:'rgba(201,168,76,0.05)',border:'1px solid rgba(201,168,76,0.15)',borderRadius:8,fontSize:11,color:'var(--text2)',fontFamily:'Cinzel,serif'}}>
+            ✦ Editing stats for: <span style={{color:'var(--gold2)'}}>{chapters.find(ch=>ch.id===chId)?.title}</span>
+            <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>Leave blank to inherit base stats</div>
+          </div>
+        )}
+
         {/* Stats display */}
-        <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:14 }}>
-          {[['HP',stats.hp],['Mana',stats.mana],['Speed',stats.speed]].map(([k,v])=>(
-            <div key={k} style={{ background:'var(--panel)',border:'1px solid var(--border)',borderRadius:8,padding:'8px',textAlign:'center' }}>
-              <div style={{ fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:1 }}>{k}</div>
-              <div style={{ fontFamily:'Cinzel,serif',fontSize:14,color:'var(--gold2)',marginTop:2 }}>{v}</div>
-            </div>
-          ))}
-        </div>
+        {!isChTab&&(
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12}}>
+            {[['HP',stats.hp],['Mana',stats.mana],['Speed',stats.speed]].map(([k,v])=>(
+              <div key={k} style={{background:'var(--panel)',border:'1px solid var(--border)',borderRadius:8,padding:'8px',textAlign:'center'}}>
+                <div style={{fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:1}}>{k}</div>
+                <div style={{fontFamily:'Cinzel,serif',fontSize:14,color:'var(--gold2)',marginTop:2}}>{v}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <div className="form-group">
-          <label className="form-label">Name</label>
-          <input className="form-input" value={c.name||''} onChange={e=>patch('name',e.target.value)}/>
-        </div>
-
+        {/* Level */}
         <div className="form-group">
           <label className="form-label">Level (1–100)</label>
-          <input className="form-input" type="number" min="1" max="100" value={c.level||1} onChange={e=>patch('level',parseInt(e.target.value)||1)}/>
+          <input className="form-input" type="number" min="1" max="100"
+            value={isChTab?(getChStat(chId).level||c.level||1):(c.level||1)}
+            onChange={e=>isChTab?patchChStat(chId,'level',parseInt(e.target.value)||1):patch('level',parseInt(e.target.value)||1)}/>
+          <div style={{fontSize:10,fontFamily:'Cinzel,serif',color:'var(--gold)',marginTop:4}}>
+            ⚔ {getTierName(isChTab?(getChStat(chId).level||c.level||1):(c.level||1))}
+          </div>
         </div>
 
-        {sel('Archetype','archetype',ARCHETYPES)}
-        {sel('Grade','grade',GRADES)}
-        {sel('Role','role',ROLES)}
-        {sel('Affinity','affinity',[...AFFINITIES,...SPECIAL_AFFs])}
+        {/* Base-only fields */}
+        {!isChTab&&(
+          <>
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input className="form-input" value={c.name||''} onChange={e=>patch('name',e.target.value)}/>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Role</label>
+              <div className="radio-group">{ROLES.map(r=><div key={r} className={'radio-btn '+(c.role===r?'active':'')} onClick={()=>patch('role',r)}>{r}</div>)}</div>
+            </div>
+          </>
+        )}
 
-        <div className="form-group">
-          <label className="form-label">Backstory / Lore</label>
-          <textarea className="form-input" rows={4} value={c.lore||c.bio||''} onChange={e=>{ patch('lore',e.target.value); patch('bio',e.target.value) }} style={{ resize:'vertical' }}/>
-        </div>
+        {sel('Archetype','archetype',ARCHETYPES,chId)}
+        {sel('Grade / Rank','grade',GRADES,chId)}
+        {!isChTab&&sel('Affinity (Primary)','affinity',[...AFFINITIES,...SPECIAL_AFFs],null)}
+
+        {/* Multi affinities — base only */}
+        {!isChTab&&(
+          <div className="form-group">
+            <label className="form-label">Affinities</label>
+            <div className="multi-select">
+              {[...AFFINITIES,...SPECIAL_AFFs].map(a=>(
+                <div key={a} className={'multi-chip '+((c.affinities||[]).includes(a)?'sel':'')} style={{color:AFF_CLR[a]}} onClick={()=>togAff(a)}>{a}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Backstory — base only */}
+        {!isChTab&&(
+          <div className="form-group">
+            <label className="form-label">Backstory / Lore</label>
+            <textarea className="form-input" rows={4} value={c.lore||c.bio||''} onChange={e=>{patch('lore',e.target.value);patch('bio',e.target.value)}} style={{resize:'vertical'}}/>
+          </div>
+        )}
 
         {/* Skills */}
-        <div style={{ fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:2,marginBottom:8 }}>SKILLS</div>
-        {(c.skills||[]).map((sk,i)=>(
-          <div key={i} style={{ background:'var(--panel)',border:'1px solid var(--border)',borderRadius:8,padding:'10px 12px',marginBottom:8 }}>
-            <div style={{ display:'flex',gap:6,marginBottom:6 }}>
-              <input value={sk.name||''} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],name:e.target.value}; patch('skills',s) }}
-                placeholder="Skill name" className="form-input" style={{ flex:1 }}/>
-              <select value={sk.type||'Attack'} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],type:e.target.value}; patch('skills',s) }}
-                className="form-input" style={{ width:85 }}>
-                {['Attack','Buff','Debuff'].map(t=><option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div style={{ display:'flex',gap:6,marginBottom:6 }}>
-              <select value={sk.element||'Fire'} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],element:e.target.value}; patch('skills',s) }}
-                className="form-input" style={{ flex:1 }}>
-                {['Fire','Water','Ice','Earth','Light','Dark','Blood','Void','Magma','Sand'].map(el=><option key={el}>{el}</option>)}
-              </select>
-              <div style={{ display:'flex',alignItems:'center',gap:5 }}>
-                <label style={{ fontSize:10,fontFamily:'Cinzel,serif',color:'var(--text3)',whiteSpace:'nowrap' }}>Lv.</label>
-                <input type="number" min="1" max="100" value={sk.level||1} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],level:parseInt(e.target.value)||1}; patch('skills',s) }}
-                  className="form-input" style={{ width:60 }}/>
+        <div style={{fontSize:9,fontFamily:'Cinzel,serif',color:'var(--text3)',letterSpacing:2,marginBottom:8}}>SKILLS</div>
+        {(isChTab?chSkills(chId):c.skills||[]).map(sk=>(
+          <div key={sk.id||sk.name} className="skill-item" style={{'--element-clr':AFF_CLR[sk.element]||'var(--gold)'}}>
+            <div style={{flex:1}}>
+              <div className="skill-name">{sk.name}</div>
+              <div style={{display:'flex',gap:5,marginTop:3,flexWrap:'wrap'}}>
+                <span style={{fontSize:9,padding:'1px 6px',borderRadius:10,border:'1px solid '+(SKILL_TYPE_CLR[sk.type]||'var(--gold)'),color:SKILL_TYPE_CLR[sk.type]||'var(--gold)',fontFamily:'Cinzel,serif'}}>{sk.type}</span>
+                <span className="skill-element" style={{color:AFF_CLR[sk.element]||'var(--gold)',borderColor:AFF_CLR[sk.element]||'var(--gold)'}}>{sk.element}</span>
+                <span className="skill-lvl">Lv.{sk.level}</span>
               </div>
+              {(sk.description||sk.desc)&&<div style={{fontSize:11,color:'var(--text3)',marginTop:3,fontStyle:'italic'}}>{sk.description||sk.desc}</div>}
             </div>
-            <input value={sk.desc||sk.description||''} onChange={e=>{ const s=[...(c.skills||[])]; s[i]={...s[i],desc:e.target.value,description:e.target.value}; patch('skills',s) }}
-              placeholder="Description" className="form-input"/>
-            <button onClick={()=>{ const s=(c.skills||[]).filter((_,j)=>j!==i); patch('skills',s) }}
-              style={{ marginTop:6,background:'rgba(193,18,31,0.1)',border:'1px solid rgba(193,18,31,0.3)',borderRadius:6,padding:'3px 10px',color:'#ff6b6b',fontSize:10,fontFamily:'Cinzel,serif',cursor:'pointer' }}>
-              Remove
-            </button>
+            <button onClick={()=>setEditSkill({...sk,_chId:isChTab?chId:null})} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:13,padding:'0 4px'}}>✏</button>
+            <button onClick={()=>{
+              if(isChTab) setChSkills(chId,chSkills(chId).filter(x=>x.id!==sk.id&&x.name!==sk.name))
+              else patch('skills',(c.skills||[]).filter(x=>x.id!==sk.id&&x.name!==sk.name))
+            }} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:18,padding:'0 4px'}}>×</button>
           </div>
         ))}
-        <MBtn className="btn btn-outline btn-full" style={{ marginBottom:16 }}
-          onClick={()=>patch('skills',[...(c.skills||[]),{name:'',type:'Attack',desc:'',description:'',element:'Fire',level:1,power:0}])}>
-          + Add Skill
-        </MBtn>
+        <MBtn className="btn btn-outline btn-full" style={{marginTop:6,marginBottom:20}} onClick={()=>setShowSkill(true)}>+ Add Skill</MBtn>
       </div>
+
+      {showSkill&&<CollabSkillModal onClose={()=>setShowSkill(false)} onSave={sk=>{
+        if(isChTab) setChSkills(chId,[...chSkills(chId),sk])
+        else patch('skills',[...(c.skills||[]),sk])
+      }}/>}
+      {editSkill&&<CollabSkillModal existing={editSkill} onClose={()=>setEditSkill(null)} onSave={updated=>{
+        const _chId=updated._chId
+        if(_chId) setChSkills(_chId,chSkills(_chId).map(x=>(x.id===updated.id||x.name===updated.name)?updated:x))
+        else patch('skills',(c.skills||[]).map(x=>(x.id===updated.id||x.name===updated.name)?updated:x))
+      }}/>}
     </Overlay>
   )
 }
 
 // ── CHARACTERS TAB IN SESSION ─────────────────────────────────────────────────
-function CharactersPanel({ sessionId, user, onBack, initChars }) {
+function CharactersPanel({ sessionId, user, onBack, initChars, chapters }) {
   const [chars,setChars]=useState({})
   const [activeChar,setActiveChar]=useState(null)
 
@@ -287,7 +402,7 @@ function CharactersPanel({ sessionId, user, onBack, initChars }) {
     return ()=>unsub()
   },[sessionId])
 
-  if(activeChar) return <CharEditor sessionId={sessionId} char={activeChar} user={user} onBack={()=>setActiveChar(null)}/>
+  if(activeChar) return <CharEditor sessionId={sessionId} char={activeChar} chapters={chapters||[]} user={user} onBack={()=>setActiveChar(null)}/>
 
   const charList=objToArr(chars)
 
@@ -497,7 +612,7 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
   }
 
   if(showChat) return <ChatPanel sessionId={session.id} user={user} members={members} onClose={()=>setShowChat(false)}/>
-  if(showChars) return <CharactersPanel sessionId={session.id} user={user} onBack={()=>setShowChars(false)} initChars={chars}/>
+  if(showChars) return <CharactersPanel sessionId={session.id} user={user} onBack={()=>setShowChars(false)} initChars={chars} chapters={chapters}/>
   if(activeChapter) return <ChapterView sessionId={session.id} chapter={activeChapter} user={user} isOwner={isOwner} onBack={()=>setActiveChapter(null)} members={members} onOpenChat={()=>setShowChat(true)}/>
 
   return (
