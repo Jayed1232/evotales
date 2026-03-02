@@ -161,7 +161,7 @@ function ChatPanel({ sessionId, user, members, onClose }) {
         <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
           placeholder={replyTo?'Write your reply...':'Type a message...'}
           style={{ flex:1,background:'var(--panel)',border:'1px solid rgba(201,168,76,0.5)',borderRadius:20,padding:'10px 14px',color:'var(--text)',fontFamily:'Crimson Pro,serif',fontSize:13,outline:'none',boxShadow:'0 0 8px rgba(201,168,76,0.2)' }}
-        <button onClick={send} style={{ background:'rgba(201,168,76,0.2)',border:'1px solid rgba(201,168,76,0.4)',borderRadius:'50%',width:38,height:38,color:'var(--gold2)',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>➤</button>
+        <button onClick={send} style={{ background:'rgba(201,168,76,0.2)',border:'1px solid rgba(201,168,76,0.4)',borderRadius:'50%',width:38,height:38,color:'var(--gold2)',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{'➤'}</button>
       </div>
     </Overlay>
   )
