@@ -755,11 +755,18 @@ function ReaderPage({ story, onClose }) {
   const [view, setView] = useState('home')
   const [chIdx, setChIdx] = useState(0)
   const [pIdx, setPIdx] = useState(0)
-  const [unlockedChs, setUnlockedChs] = useState([0])
+  const storageKey = 'evo_progress_' + story.id
+const [unlockedChs, setUnlockedChs] = useState(() => {
+  try { return JSON.parse(localStorage.getItem(storageKey)) || [0] } catch { return [0] }
+})
   const [viewChar, setViewChar] = useState(null)
   const chapters = story.chapters||[]
 
-  const completeChapter = (idx) => setUnlockedChs(prev => [...new Set([...prev,idx+1])])
+  const completeChapter = (idx) => setUnlockedChs(prev => {
+  const next = [...new Set([...prev,idx+1])]
+  localStorage.setItem(storageKey, JSON.stringify(next))
+  return next
+})
 
   const charsAt = (cIdx) => {
     const ch = chapters[cIdx]
