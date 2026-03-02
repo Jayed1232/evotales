@@ -43,6 +43,17 @@ function IBtn({ children, onClick, title, color='var(--gold2)', bg='rgba(201,168
   return <button onClick={onClick} title={title} style={{ background:bg,border:'1px solid '+border,borderRadius:8,padding:'4px 8px',color,cursor:'pointer',fontSize:11,fontFamily:'Cinzel,serif',flexShrink:0 }}>{children}</button>
 }
 
+function ToolBtn({ icon, label, onClick, color='var(--text2)' }) {
+  return (
+    <button onClick={onClick} style={{ flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 4px',background:'none',border:'none',borderRight:'1px solid var(--border)',cursor:'pointer',color,transition:'background .2s' }}
+      onMouseEnter={e=>e.currentTarget.style.background='rgba(201,168,76,0.06)'}
+      onMouseLeave={e=>e.currentTarget.style.background='none'}>
+      <span style={{ fontSize:16 }}>{icon}</span>
+      <span style={{ fontSize:8,fontFamily:'Cinzel,serif',letterSpacing:0.5,whiteSpace:'nowrap' }}>{label}</span>
+    </button>
+  )
+}
+
 // ── SETUP MODAL ─────────────────────────────────────────────────────────────
 function SetupProfileModal({ onDone }) {
   const [name,setName]=useState('')
@@ -489,15 +500,17 @@ function SessionView({ session, user, onBack, onSaveToLibrary, onDeleteSession }
           </div>
         }
         right={
-          <>
-            <button onClick={copyCode} style={{ background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,padding:'4px 8px',color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:9,cursor:'pointer',letterSpacing:1 }}>{session.code}</button>
-            <IBtn onClick={()=>setShowChat(true)}>💬</IBtn>
-            <IBtn onClick={()=>setShowChars(true)}>⚔</IBtn>
-            {isOwner&&<IBtn onClick={handleSaveToLibrary} color='#4caf50' bg='rgba(76,175,80,0.1)' border='rgba(76,175,80,0.3)'>{saving?'⟳':'💾'}</IBtn>}
-            {isOwner&&<IBtn onClick={handleDeleteSession} color='#ff6b6b' bg='rgba(193,18,31,0.1)' border='rgba(193,18,31,0.3)'>🗑</IBtn>}
-          </>
+          <button onClick={copyCode} style={{ background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,padding:'4px 10px',color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:9,cursor:'pointer',letterSpacing:2 }}>{session.code}</button>
         }
       />
+
+      {/* Action toolbar */}
+      <div style={{ display:'flex',gap:0,borderBottom:'1px solid var(--border)',background:'rgba(13,10,26,0.8)',flexShrink:0 }}>
+        <ToolBtn icon="💬" label="Chat" onClick={()=>setShowChat(true)}/>
+        <ToolBtn icon="⚔" label="Characters" onClick={()=>setShowChars(true)}/>
+        {isOwner&&<ToolBtn icon={saving?'⟳':'💾'} label="Save to Library" onClick={handleSaveToLibrary} color='#4caf50'/>}
+        {isOwner&&<ToolBtn icon="🗑" label="Delete Session" onClick={handleDeleteSession} color='#ff6b6b'/>}
+      </div>
 
       <div style={{ flex:1,overflowY:'auto',padding:'8px 14px 20px' }}>
         {/* Members row with kick */}
