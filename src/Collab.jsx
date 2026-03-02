@@ -136,7 +136,7 @@ function ChatPanel({ sessionId, user, members, onClose }) {
                   {m.text}
                 </div>
                 {/* Reply button */}
-                <button onClick={()=>setReplyTo(m)} style={{ background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:12,opacity:0.6,padding:2 }} title="Reply">↩</button>
+                <button onClick={()=>setReplyTo(m)} style={{ background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,color:'var(--gold2)',cursor:'pointer',fontSize:11,padding:'3px 7px',fontFamily:'Cinzel,serif',flexShrink:0 }} title="Reply">↩ Reply</button>
               </div>
               <div style={{ fontSize:8,color:'var(--text3)',marginTop:2 }}>{new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
             </div>
@@ -160,7 +160,7 @@ function ChatPanel({ sessionId, user, members, onClose }) {
       <div style={{ padding:'10px 14px',borderTop:'1px solid var(--border)',display:'flex',gap:8 }}>
         <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
           placeholder={replyTo?'Write your reply...':'Type a message...'}
-          style={{ flex:1,background:'var(--panel)',border:'1px solid var(--border)',borderRadius:20,padding:'10px 14px',color:'var(--text)',fontFamily:'Crimson Pro,serif',fontSize:13,outline:'none' }}/>
+          style={{ flex:1,background:'var(--panel)',border:'1px solid rgba(201,168,76,0.5)',borderRadius:20,padding:'10px 14px',color:'var(--text)',fontFamily:'Crimson Pro,serif',fontSize:13,outline:'none',boxShadow:'0 0 8px rgba(201,168,76,0.2),inset 0 0 8px rgba(201,168,76,0.05)' }}
         <button onClick={send} style={{ background:'rgba(201,168,76,0.2)',border:'1px solid rgba(201,168,76,0.4)',borderRadius:'50%',width:38,height:38,color:'var(--gold2)',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>➤</button>
       </div>
     </Overlay>
